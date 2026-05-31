@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #111;
+      margin: 0;
+    }
+    #metsu-btn {
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      background: #c0392b;
+      color: #fff;
+      font-size: 28px;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+    #metsu-btn:disabled {
+      background: #888;
+      cursor: not-allowed;
+    }
+    #log {
+      position: fixed;
+      bottom: 20px;
+      left: 0; right: 0;
+      text-align: center;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<button id="metsu-btn">滅</button>
+<div id="log">待機中</div>
+
+<script type="module">
+
+  import { initializeApp }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, signInAnonymously }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getDatabase, ref, set }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey:            "AIzaSyCCXS7VkDZywh84EtS3AtTUfdvOmdKEyaM",
+    authDomain:        "musicar-c18e9.firebaseapp.com",
+    databaseURL:       "https://musicar-c18e9-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId:         "musicar-c18e9",
+    storageBucket:     "musicar-c18e9.firebasestorage.app",
+    messagingSenderId: "546300872409",
+    appId:             "1:546300872409:web:53b357be74d3e5a136e0c8"
+  };
+
+  const logEl = document.getElementById('log');
+  function log(msg, color) {
+    logEl.style.color = color || '#0f0';
+    logEl.textContent = msg;
+    console.log(msg);
+  }
+
+  const app  = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db   = getDatabase(app);
+  log('Firebase 初期化 OK');
+
+  async function sha256(message) {
+    const buf  = new TextEncoder().encode(message);
+    const hash = await crypto.subtle.digest('SHA-256', buf);
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  document.getElementById('metsu-btn')
+    .addEventListener('click', async () => {
+      log('ボタン押された');
+      try {
+        log('匿名ログイン中...');
+        await signInAnonymously(auth);
+        log('ログイン OK');
+
+        const hash = await sha256('12345');
+        log('ハッシュ OK: ' + hash.slice(0,8) + '...');
+
+        await set(ref(db, 'main'), {
+          command:      'music9',
+          passwordHash: hash,
+          timestamp:    Date.now()
+        });
+
+        log('送信成功！', '#ffdd00');
+      } catch(e) {
+        log('エラー: ' + e.message, '#ff4444');
+        console.error(e);
+      }
+    });
+
+</script>
+</body>
+</html>
